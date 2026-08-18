@@ -665,28 +665,15 @@ async function translateText() {
   translateResult.style.display = 'none';
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 1000,
-        messages: [
-          {
-            role: "user",
-            content: "Translate the following Hebrew text into correct, natural, grammatically accurate colloquial Levantine Arabic (written in Arabic script), the way a native Levantine speaker would actually say it — no literal word-for-word translation, no mixing dialects, no invented words. Then give an accurate transliteration in Latin letters matching real Levantine pronunciation. Respond ONLY with raw JSON, no markdown, no code fences, no preamble, in this exact shape: {\"arabic\": \"...\", \"transliteration\": \"...\"}. Hebrew text: " + text
-          }
-        ]
-      })
-    });
+    const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text) + "&langpair=he|ar";
+    const response = await fetch(url);
     const data = await response.json();
-    let raw = data.content.map(c => c.text || "").join("").trim();
-    raw = raw.replace(/```json/g, "").replace(/```/g, "").trim();
-    const parsed = JSON.parse(raw);
-    tAr.textContent = parsed.arabic;
-    tTranslit.textContent = parsed.transliteration;
+    const translated = data && data.responseData && data.responseData.translatedText;
+    if (!translated) throw new Error("no translation");
+    tAr.textContent = translated;
+    tTranslit.textContent = '';
     translateResult.style.display = 'block';
-    speak(parsed.arabic);
+    speak(translated);
   } catch (err) {
     console.error(err);
     translateErr.textContent = 'משהו השתבש בתרגום... جرب مرة تانية';
