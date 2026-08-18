@@ -211,8 +211,9 @@
       <button class="play-btn" id="testVoiceBtn" style="padding:8px 20px; font-size:0.95rem;">🔊 נסה קול / جرّب الصوت</button>
     </div>
     <p style="font-size:0.8rem; color:#9ca3af; text-align:center; margin-top:8px;">
-      אם הקול לא נשמע טוב, נסה/י לבחור קול אחר מהרשימה. ב-Chrome בד"כ יש קולות ערביים יותר טבעיים.
+      עכשיו האפליקציה משתמשת בקול מדויק אוטומטית (לא תלוי במכשיר שלך). הרשימה כאן היא רק גיבוי למקרה שאין אינטרנט.
     </p>
+
   </div>
 
   <div class="card translateBox">
@@ -602,13 +603,26 @@ voiceSelect.addEventListener('change', () => {
 testVoiceBtn.addEventListener('click', () => speak('مرحبا، كيفك اليوم؟'));
 
 function speak(text) {
-  if (!('speechSynthesis' in window)) {
-    alert('הדפדפן שלך לא תומך בהשמעת קול');
-    return;
-  }
-  window.speechSynthesis.cancel();
   const clean = text.split(' / ')[0].trim();
-  const utter = new SpeechSynthesisUtterance(clean);
+  playAccurateArabic(clean);
+}
+
+function playAccurateArabic(text) {
+  try {
+    const url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=ar&client=tw-ob&q=' + encodeURIComponent(text);
+    const audio = new Audio(url);
+    audio.playbackRate = currentRate + 0.35; // Google voice is naturally slower
+    audio.play().catch(() => fallbackSpeak(text));
+    audio.onerror = () => fallbackSpeak(text);
+  } catch (e) {
+    fallbackSpeak(text);
+  }
+}
+
+function fallbackSpeak(text) {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
   const voices = window.speechSynthesis.getVoices();
   let chosen = voices.find(v => v.voiceURI === selectedVoiceURI);
   if (!chosen) {
