@@ -209,6 +209,7 @@
     <select id="voiceSelect" class="search" style="text-align:right; cursor:pointer;"></select>
     <div style="text-align:center; margin-top:8px;">
       <button class="play-btn" id="testVoiceBtn" style="padding:8px 20px; font-size:0.95rem;">🔊 נסה קול / جرّب الصوت</button>
+      <div id="voiceStatus" style="margin-top:8px; font-size:0.85rem; color:#0f766e; font-weight:600;"></div>
     </div>
     <p style="font-size:0.8rem; color:#9ca3af; text-align:center; margin-top:8px;">
       אם הקול לא נשמע טוב, נסה/י לבחור קול אחר מהרשימה. ב-Chrome בד"כ יש קולות ערביים יותר טבעיים.
@@ -600,7 +601,13 @@ voiceSelect.addEventListener('change', () => {
   selectedVoiceURI = voiceSelect.value;
 });
 
-testVoiceBtn.addEventListener('click', () => speak('مرحبا، كيفك اليوم؟'));
+testVoiceBtn.addEventListener('click', () => {
+  const status = document.getElementById('voiceStatus');
+  const voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+  const arCount = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('ar')).length;
+  status.textContent = 'נמצאו ' + arCount + ' קולות ערביים / تم إيجاد ' + arCount + ' صوت عربي بجهازك';
+  speak('مرحبا، كيفك اليوم؟');
+});
 
 function speak(text) {
   const clean = text.split(' / ')[0].trim();
@@ -610,23 +617,35 @@ function speak(text) {
 
 function fallbackSpeak(text) {
   if (!('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
-  const utter = new SpeechSynthesisUtterance(text);
-  const voices = window.speechSynthesis.getVoices();
-  let chosen = voices.find(v => v.voiceURI === selectedVoiceURI);
-  if (!chosen) {
-    const arVoices = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('ar'));
-    chosen = arVoices.find(v => guessGender(v) === 'female') || arVoices[0];
-  }
-  if (chosen) {
-    utter.voice = chosen;
-    utter.lang = chosen.lang;
+  const synth = window.speechSynthesis;
+
+  const doSpeak = () => {
+    const utter = new SpeechSynthesisUtterance(text);
+    const voices = synth.getVoices();
+    let chosen = voices.find(v => v.voiceURI === selectedVoiceURI);
+    if (!chosen) {
+      const arVoices = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('ar'));
+      chosen = arVoices.find(v => guessGender(v) === 'female') || arVoices[0];
+    }
+    if (chosen) {
+      utter.voice = chosen;
+      utter.lang = chosen.lang;
+    } else {
+      utter.lang = 'ar-SA';
+    }
+    utter.rate = currentRate;
+    utter.pitch = 1.05;
+    utter.volume = 1;
+    utter.onerror = (e) => console.error('speech error', e.error);
+    synth.speak(utter);
+  };
+
+  if (synth.speaking || synth.pending) {
+    synth.cancel();
+    setTimeout(doSpeak, 120);
   } else {
-    utter.lang = 'ar-SA';
+    doSpeak();
   }
-  utter.rate = currentRate;
-  utter.pitch = 1.05;
-  window.speechSynthesis.speak(utter);
 }
 
 playBtn.onclick = () => speak(resAr.textContent);
