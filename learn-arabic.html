@@ -211,7 +211,7 @@
       <button class="play-btn" id="testVoiceBtn" style="padding:8px 20px; font-size:0.95rem;">🔊 נסה קול / جرّب الصوت</button>
     </div>
     <p style="font-size:0.8rem; color:#9ca3af; text-align:center; margin-top:8px;">
-      עכשיו האפליקציה משתמשת בקול מדויק אוטומטית (לא תלוי במכשיר שלך). הרשימה כאן היא רק גיבוי למקרה שאין אינטרנט.
+      אם הקול לא נשמע טוב, נסה/י לבחור קול אחר מהרשימה. ב-Chrome בד"כ יש קולות ערביים יותר טבעיים.
     </p>
 
   </div>
@@ -604,19 +604,8 @@ testVoiceBtn.addEventListener('click', () => speak('مرحبا، كيفك الي
 
 function speak(text) {
   const clean = text.split(' / ')[0].trim();
-  playAccurateArabic(clean);
-}
-
-function playAccurateArabic(text) {
-  try {
-    const url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=ar&client=tw-ob&q=' + encodeURIComponent(text);
-    const audio = new Audio(url);
-    audio.playbackRate = currentRate + 0.35; // Google voice is naturally slower
-    audio.play().catch(() => fallbackSpeak(text));
-    audio.onerror = () => fallbackSpeak(text);
-  } catch (e) {
-    fallbackSpeak(text);
-  }
+  // Speak immediately with the device voice (guaranteed to work on tap)
+  fallbackSpeak(clean);
 }
 
 function fallbackSpeak(text) {
