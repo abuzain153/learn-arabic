@@ -302,7 +302,7 @@ const categories = {
   ],
   "אוכל": [
     ["לחם", "خبز", "khubz"],
-    ["מים", "מי / مي / ماء", "mayy / mā'"],
+    ["מים", "مي / ماء", "mayy / mā'"],
     ["קפה", "قهوة", "qahwe"],
     ["תה", "شاي", "shāy"],
     ["אורז", "رز", "ruzz"],
@@ -496,6 +496,73 @@ const categories = {
     ["למה؟", "ليش؟", "lēsh?"],
     ["אני אוהב אותך", "بحبك", "beḥebbak"],
     ["בהצלחה", "بالتوفيق", "bit-tawfī'"]
+  ],
+  "פירות": [
+    ["תפוח", "تفاحة", "tuffāḥa"],
+    ["תפוז", "برتقالة", "burtu'āle"],
+    ["בננה", "موزة", "mōze"],
+    ["ענבים", "عنب", "‘enab"],
+    ["תות", "فريز / شليك", "frēz"],
+    ["אבטיח", "بطيخ", "baṭṭīkh"],
+    ["מלון", "شمام", "shammām"],
+    ["אפרסק", "خوخ", "khōkh"],
+    ["מנגו", "مانجا", "mānga"],
+    ["אננס", "أناناس", "anānās"],
+    ["קיווי", "كيوي", "kīwi"],
+    ["לימון", "ليمون", "lēmūn"],
+    ["אגס", "إجاص / كمثرى", "ijāṣ"],
+    ["שזיף", "خوخ أسود / برقوق", "bar'ū'"],
+    ["רימון", "رمان", "rummān"],
+    ["דובדבן", "كرز", "karaz"],
+    ["משמש", "مشمش", "mishmish"],
+    ["תמר", "تمر", "tamer"],
+    ["תאנה", "تين", "tīn"],
+    ["קוקוס", "جوز هند", "jōz hind"]
+  ],
+  "ירקות": [
+    ["עגבנייה", "بندورة", "banadōra"],
+    ["מלפפון", "خيار", "khyār"],
+    ["גזר", "جزر", "jazar"],
+    ["בצל", "بصل", "baṣal"],
+    ["שום", "توم / ثوم", "tōm"],
+    ["תפוח אדמה", "بطاطا", "baṭāṭa"],
+    ["חציל", "باذنجان", "bādenjān"],
+    ["פלפל", "فليفلة / فلفل", "flēfle"],
+    ["כרוב", "ملفوف", "malfūf"],
+    ["כרובית", "زهرة / قرنبيط", "zahra"],
+    ["תרד", "سبانخ", "sabānekh"],
+    ["קישוא", "كوسا", "kūsa"],
+    ["שעועית", "فاصولياء", "faṣūlya"],
+    ["אפונה", "بازلاء", "bāzella"],
+    ["סלק", "شمندر", "shmandar"],
+    ["צנון", "فجل", "fijel"],
+    ["כוסברה", "كزبرة", "kuzbara"],
+    ["פטרוזיליה", "بقدونس", "ba'dūnes"],
+    ["נענע", "نعناع", "na‘nā‘"]
+  ],
+  "האלפבית הערבי": [
+    ["א (אלף)", "ا — أَلِف", "alif"],
+    ["ב (בית)", "ب — باء", "bā'"],
+    ["ג (גימל)", "ج — جيم", "jīm"],
+    ["ד (דלת)", "د — دال", "dāl"],
+    ["ה (הא)", "ه — هاء", "hā'"],
+    ["ו (וו)", "و — واو", "wāw"],
+    ["ז (זין)", "ز — زاي", "zāy"],
+    ["ח (חית)", "ح — حاء", "ḥā'"],
+    ["ט (טית)", "ط — طاء", "ṭā'"],
+    ["י (יוד)", "ي — ياء", "yā'"],
+    ["כ (כף)", "ك — كاف", "kāf"],
+    ["ל (למד)", "ل — لاَمْ", "lām"],
+    ["מ (מם)", "م — ميم", "mīm"],
+    ["נ (נון)", "ن — نون", "nūn"],
+    ["ס (סמך)", "س — سين", "sīn"],
+    ["ע (עין)", "ع — عين", "‘ēn"],
+    ["פ (פא)", "ف — فاء", "fā'"],
+    ["צ (צדי)", "ص — صاد", "ṣād"],
+    ["ק (קוף)", "ق — قاف", "qāf"],
+    ["ר (ריש)", "ر — راء", "rā'"],
+    ["ש (שין)", "ش — شين", "shīn"],
+    ["ת (תו)", "ت — تاء", "tā'"]
   ]
 };
 
@@ -528,7 +595,11 @@ function renderGrid(filter) {
   if (filter && filter.trim().length > 0) {
     let allWords = [];
     Object.values(categories).forEach(list => allWords = allWords.concat(list));
-    words = allWords.filter(w => w[0].includes(filter) || w[1].includes(filter));
+    const trimmed = filter.trim();
+    // Exact matches first (important for single-letter alphabet lookups), then partial matches
+    const exact = allWords.filter(w => w[0] === trimmed || w[0].startsWith(trimmed + ' ('));
+    const partial = allWords.filter(w => !exact.includes(w) && (w[0].includes(trimmed) || w[1].includes(trimmed)));
+    words = exact.concat(partial);
   }
   if (words.length === 0) {
     gridEl.innerHTML = '<div class="empty">לא נמצאה מילה... جرب كلمة تانية</div>';
@@ -610,7 +681,11 @@ testVoiceBtn.addEventListener('click', () => {
 });
 
 function speak(text) {
-  const clean = text.split(' / ')[0].trim();
+  // For alphabet entries formatted "letter — name", speak the pronounceable name, not the bare symbol
+  let clean = text.split(' / ')[0].trim();
+  if (clean.includes(' — ')) {
+    clean = clean.split(' — ').pop().trim();
+  }
   // Speak immediately with the device voice (guaranteed to work on tap)
   fallbackSpeak(clean);
 }
